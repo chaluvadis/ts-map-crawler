@@ -5,7 +5,7 @@ export const savePlace = async (data: Place): Promise<void> => {
   const client = await pool.connect();
   try {
     const query = 'INSERT INTO places_data (data) VALUES ($1)';
-    await client.query(query, [JSON.stringify(data)]);
+    await client.query(query, [data]);
   } catch (error) {
     console.error('Error saving place:', error);
     throw error;
@@ -15,16 +15,35 @@ export const savePlace = async (data: Place): Promise<void> => {
 };
 
 export const savePlaces = async (places: Place[]): Promise<number> => {
-  let savedCount = 0;
-  for (const place of places) {
-    try {
-      await savePlace(place);
-      savedCount++;
-    } catch (error) {
-      console.error('Failed to save place:', error);
-    }
+  if (places.length === 0) {
+    return 0;
   }
-  return savedCount;
+  
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const query = 'INSERT INTO places_data (data) VALUES ($1)';
+    let savedCount = 0;
+    
+    for (const place of places) {
+      try {
+        await client.query(query, [place]);
+        savedCount++;
+      } catch (error) {
+        console.error('Failed to save place:', error);
+      }
+    }
+    
+    await client.query('COMMIT');
+    return savedCount;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error saving places:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 export const getAllPlaces = async (): Promise<Place[]> => {

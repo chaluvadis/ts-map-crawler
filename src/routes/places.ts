@@ -8,8 +8,8 @@ router.get('/places', async (req: Request, res: Response) => {
     const { limit, offset } = req.query;
     
     if (limit !== undefined || offset !== undefined) {
-      const limitNum = limit ? parseInt(limit as string) : 10;
-      const offsetNum = offset ? parseInt(offset as string) : 0;
+      const limitNum = limit ? Math.max(1, parseInt(limit as string) || 10) : 10;
+      const offsetNum = offset ? Math.max(0, parseInt(offset as string) || 0) : 0;
       
       const result = await getPlacesPaginated(limitNum, offsetNum);
       res.status(200).json({
